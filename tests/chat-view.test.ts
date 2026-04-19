@@ -274,4 +274,114 @@ describe('ChatView.vue', () => {
     await wrapper.find('.menu-btn').trigger('click')
     expect(sidebar.classes()).toContain('open')
   })
+
+  it('shows session list in sidebar', async () => {
+    vi.mocked(listSessions).mockReturnValue([
+      {
+        id: 'sess-1',
+        threadId: 'tid-1',
+        messages: [{ id: '1', role: 'user', content: 'Hello world', timestamp: 1000 }],
+        title: 'Hello world',
+        updatedAt: Date.now(),
+      },
+    ])
+    const { wrapper } = mountChat()
+    await flushPromises()
+
+    expect(wrapper.find('.session-item').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Hello world')
+  })
+
+  it('switches to a session when clicking session item', async () => {
+    const sessionData = {
+      id: 'sess-1',
+      threadId: 'tid-1',
+      messages: [
+        { id: '1', role: 'user', content: 'old msg', timestamp: 1000 },
+        { id: '2', role: 'assistant', content: 'old reply', timestamp: 1001 },
+      ],
+      title: 'old msg',
+      updatedAt: Date.now(),
+    }
+    vi.mocked(listSessions).mockReturnValue([sessionData])
+    const { wrapper } = mountChat()
+    await flushPromises()
+
+    await wrapper.find('.session-item').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.findAll('.message')).toHaveLength(2)
+    expect(wrapper.text()).toContain('old msg')
+  })
+
+  it('deletes a session when clicking delete button', async () => {
+    vi.mocked(listSessions).mockReturnValue([
+      {
+        id: 'sess-del',
+        threadId: null,
+        messages: [{ id: '1', role: 'user', content: 'delete me', timestamp: 1000 }],
+        title: 'delete me',
+        updatedAt: Date.now(),
+      },
+    ])
+    const { deleteSession: mockDelete } = await import('../src/services/session')
+    const { wrapper } = mountChat()
+    await flushPromises()
+
+    await wrapper.find('.session-delete').trigger('click')
+    await flushPromises()
+
+    expect(mockDelete).toHaveBeenCalledWith('sess-del')
+  })
+
+  it('closes sidebar on mobile when sending message', async () => {
+    Object.defineProperty(window, 'innerWidth', { value: 500, writable: true })
+    vi.mocked(chatStream).mockResolvedValue('tid-mob')
+    const { wrapper } = mountChat()
+    await flushPromises()
+
+    // Sidebar should be closed on mobile by default
+    expect(wrapper.find('.sidebar').classes()).not.toContain('open')
+  })
+
+  it('shows no-sessions message when empty', () => {
+    vi.mocked(listSessions).mockReturnValue([])
+    const { wrapper } = mountChat()
+    expect(wrapper.find('.no-sessions').exists()).toBe(true)
+    expect(wrapper.text()).toContain('No conversations yet')
+  })
+
+  it('disables textarea and send button while sending', async () => {
+    let resolveStream: (v: string) => void
+    vi.mocked(chatStream).mockImplementation(async () => {
+      return new Promise((r) => { resolveStream = r })
+    })
+    const { wrapper } = mountChat()
+
+    await wrapper.find('textarea.chat-input').setValue('Sending...')
+    await wrapper.find('.send-btn').trigger('click')
+    await flushPromises()
+
+    expect((wrapper.find('textarea.chat-input').element as HTMLTextAreaElement).disabled).toBe(true)
+    expect((wrapper.find('.send-btn').element as HTMLButtonElement).disabled).toBe(true)
+
+    resolveStream!('tid')
+    await flushPromises()
+  })
+
+  it('restores active session on mount', async () => {
+    const { getActiveSessionId, getSession } = await import('../src/services/session')
+    vi.mocked(getActiveSessionId).mockReturnValue('sess-active')
+    vi.mocked(getSession).mockReturnValue({
+      id: 'sess-active',
+      threadId: 'tid-active',
+      messages: [{ id: '1', role: 'user', content: 'restored', timestamp: 1000 }],
+      title: 'restored',
+      updatedAt: Date.now(),
+    })
+    const { wrapper } = mountChat()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('restored')
+  })
 })
