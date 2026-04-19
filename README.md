@@ -41,6 +41,15 @@ npm run dev                    # http://localhost:5173
 | `VITE_ZITADEL_REDIRECT_URI` | `{origin}/callback` | OAuth redirect URI |
 | `VITE_USER_MS_BASE_URL` | `http://localhost:8083` | User microservice URL |
 
+## Testing
+
+```bash
+npm test                   # Run all tests
+npm run test:coverage      # Run tests with coverage report
+```
+
+9 test files, 64 tests covering auth (PKCE flow, token storage, refresh), chat (SSE parsing, callbacks), session persistence, routing, and all Vue components. 95% statement / 97% line coverage.
+
 ## Build & Deploy
 
 ```bash
@@ -85,5 +94,25 @@ src/
 | Lint | push/PR | Type check (vue-tsc) + build |
 | Snyk | push to main, PR | npm dependency vulnerability scan |
 | Trivy | push to main, PR | Docker image vulnerability scan |
+| Sonar | push to main, PR | SonarCloud code analysis + quality gate |
+| Test | push (all branches) | Vitest unit tests |
 | Release | version tag | Auto-create GitHub release |
 | Deploy | manual | Build + push DockerHub + update ArgoCD |
+
+## Kubernetes Deployment
+
+The Deploy workflow builds a Docker image tagged with `dev-YYYYMMDDHHmm` and updates the ArgoCD deploy repo (`ceramicraft-argocd-deploy`).
+
+When deploying alongside cs-agent, ensure `CS_AGENT_CORS_ORIGINS` is set on the agent to allow the UI's origin:
+
+```yaml
+# In cs-agent values.yaml extraEnv:
+- name: CS_AGENT_CORS_ORIGINS
+  value: "https://chat.ceramicraft.com"
+```
+
+### Prerequisites
+
+- Zitadel: configure a SPA-type application with correct redirect URI and allowed CORS origin
+- IngressRoute or Ingress for external access
+- ArgoCD application pointing to the helm chart directory
