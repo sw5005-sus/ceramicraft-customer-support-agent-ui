@@ -265,8 +265,9 @@ onMounted(() => {
   height: 100vh;
   height: 100dvh;
   background: #f8f9fa;
-  max-width: 800px;
+  max-width: 960px;
   margin: 0 auto;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.06);
 }
 
 .chat-header {
