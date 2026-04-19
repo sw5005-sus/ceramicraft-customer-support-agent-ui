@@ -16,8 +16,6 @@ function makeRouter() {
     routes: [
       { path: '/callback', component: CallbackView },
       { path: '/', component: { template: '<div>home</div>' } },
-      { path: '/chat', component: { template: '<div>chat</div>' } },
-      { path: '/login', component: { template: '<div>login</div>' } },
     ],
   })
 }

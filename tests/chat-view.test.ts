@@ -36,7 +36,6 @@ function makeRouter() {
     history: createMemoryHistory(),
     routes: [
       { path: '/', component: ChatView },
-      { path: '/login', component: { template: '<div>login</div>' } },
     ],
   })
 }
