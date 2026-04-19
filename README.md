@@ -48,9 +48,6 @@ npm run dev                    # http://localhost:5173
 npm test                   # Run all tests
 npm run test:coverage      # Run tests with coverage report
 ```
-
-9 test files, 77 tests covering auth (PKCE flow, token storage, refresh), chat (SSE parsing, callbacks), session persistence (multi-conversation), routing, and all Vue components.
-
 ## Build & Deploy
 
 ```bash
