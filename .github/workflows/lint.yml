@@ -1,13 +1,14 @@
-name: Build
+name: Lint
 
 on:
   push:
-    branches: [main]
+    branches: ["**"]
   pull_request:
-    branches: [main]
+    branches: ["**"]
+  workflow_dispatch:
 
 jobs:
-  build:
+  type-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,6 +23,19 @@ jobs:
 
       - name: Type check
         run: npx vue-tsc -b
+
+  build-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
 
       - name: Build
         run: npm run build
