@@ -703,7 +703,7 @@ onUnmounted(() => {
   color: #1a1a1a;
   border-bottom-right-radius: 4px;
   white-space: pre-wrap;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.09);
 }
 
 .assistant .message-bubble {
