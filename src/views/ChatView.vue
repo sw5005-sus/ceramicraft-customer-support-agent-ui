@@ -5,6 +5,7 @@ import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { chatStream, resetThread } from '../services/chat'
 import { clearTokens } from '../services/auth'
+import { saveSession, loadSession, clearSession } from '../services/session'
 import type { ChatMessage, AgentStage } from '../types'
 
 const router = useRouter()
@@ -110,6 +111,7 @@ async function sendMessage() {
     stage.value = 'idle'
     sending.value = false
     scrollToBottom()
+    saveSession(threadId.value, messages.value)
   }
 }
 
@@ -124,6 +126,7 @@ async function newConversation() {
   messages.value = []
   threadId.value = null
   stage.value = 'idle'
+  clearSession()
 }
 
 function logout() {
@@ -141,6 +144,12 @@ function handleKeydown(e: KeyboardEvent) {
 watch(input, () => nextTick(autoResize))
 
 onMounted(() => {
+  // Restore previous session
+  const saved = loadSession()
+  if (saved) {
+    messages.value = saved.messages
+    threadId.value = saved.threadId
+  }
   scrollToBottom()
 })
 </script>
