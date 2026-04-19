@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { ref, nextTick, onMounted } from 'vue'
+import { ref, nextTick, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 import { chatStream, resetThread } from '../services/chat'
 import { clearTokens } from '../services/auth'
 import type { ChatMessage, AgentStage } from '../types'
@@ -13,13 +15,19 @@ const threadId = ref<string | null>(null)
 const stage = ref<AgentStage>('idle')
 const sending = ref(false)
 const chatContainer = ref<HTMLElement | null>(null)
+const textareaRef = ref<HTMLTextAreaElement | null>(null)
 
 const stageLabels: Record<AgentStage, string> = {
   idle: '',
-  guarding: 'Checking input...',
+  guarding: 'Checking input safety...',
   classifying: 'Understanding your request...',
   processing: 'Working on it...',
   done: '',
+}
+
+function renderMarkdown(text: string): string {
+  const raw = marked.parse(text, { async: false }) as string
+  return DOMPurify.sanitize(raw)
 }
 
 function scrollToBottom() {
@@ -28,6 +36,13 @@ function scrollToBottom() {
       chatContainer.value.scrollTop = chatContainer.value.scrollHeight
     }
   })
+}
+
+function autoResize() {
+  const el = textareaRef.value
+  if (!el) return
+  el.style.height = 'auto'
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px'
 }
 
 async function sendMessage() {
@@ -45,6 +60,9 @@ async function sendMessage() {
   sending.value = true
   stage.value = 'guarding'
   scrollToBottom()
+
+  // Reset textarea height
+  nextTick(autoResize)
 
   try {
     const returnedThreadId = await chatStream(text, threadId.value, {
@@ -120,6 +138,8 @@ function handleKeydown(e: KeyboardEvent) {
   }
 }
 
+watch(input, () => nextTick(autoResize))
+
 onMounted(() => {
   scrollToBottom()
 })
@@ -146,8 +166,9 @@ onMounted(() => {
     <!-- Messages -->
     <div ref="chatContainer" class="chat-messages">
       <div v-if="messages.length === 0" class="empty-state">
-        <div class="empty-icon">💬</div>
-        <p>How can we help you today?</p>
+        <div class="empty-icon">🏺</div>
+        <h2>Welcome to CeramiCraft Support</h2>
+        <p>Ask about products, orders, or anything we can help with.</p>
       </div>
 
       <div
@@ -156,14 +177,22 @@ onMounted(() => {
         class="message"
         :class="msg.role"
       >
+        <div class="message-avatar">
+          {{ msg.role === 'user' ? '👤' : '🤖' }}
+        </div>
         <div class="message-bubble">
-          {{ msg.content }}
+          <div v-if="msg.role === 'assistant'" class="markdown-body" v-html="renderMarkdown(msg.content)" />
+          <template v-else>{{ msg.content }}</template>
         </div>
       </div>
 
       <!-- Stage indicator -->
       <div v-if="stage !== 'idle' && stage !== 'done'" class="stage-indicator">
-        <div class="stage-spinner" />
+        <div class="stage-dots">
+          <span class="dot" />
+          <span class="dot" />
+          <span class="dot" />
+        </div>
         <span>{{ stageLabels[stage] }}</span>
       </div>
     </div>
@@ -171,6 +200,7 @@ onMounted(() => {
     <!-- Input -->
     <div class="chat-input-area">
       <textarea
+        ref="textareaRef"
         v-model="input"
         class="chat-input"
         placeholder="Type your message..."
@@ -183,7 +213,9 @@ onMounted(() => {
         :disabled="!input.trim() || sending"
         @click="sendMessage"
       >
-        ➤
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
+        </svg>
       </button>
     </div>
   </div>
@@ -194,7 +226,8 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #f5f5f5;
+  height: 100dvh;
+  background: #f8f9fa;
   max-width: 800px;
   margin: 0 auto;
 }
@@ -205,17 +238,18 @@ onMounted(() => {
   justify-content: space-between;
   padding: 12px 20px;
   background: #fff;
-  border-bottom: 1px solid #e5e5e5;
+  border-bottom: 1px solid #e8e8e8;
+  flex-shrink: 0;
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .header-logo {
-  font-size: 24px;
+  font-size: 28px;
 }
 
 .header-title {
@@ -253,7 +287,7 @@ onMounted(() => {
   padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
 .empty-state {
@@ -262,39 +296,62 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   flex: 1;
-  color: #999;
+  color: #888;
+  text-align: center;
+  padding: 40px 20px;
 }
 
-.empty-icon {
-  font-size: 48px;
-  margin-bottom: 12px;
+.empty-state .empty-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+}
+
+.empty-state h2 {
+  font-size: 20px;
+  color: #444;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.empty-state p {
+  font-size: 15px;
+  color: #888;
 }
 
 .message {
   display: flex;
+  gap: 10px;
+  align-items: flex-start;
 }
 
 .message.user {
-  justify-content: flex-end;
+  flex-direction: row-reverse;
 }
 
-.message.assistant {
-  justify-content: flex-start;
+.message-avatar {
+  font-size: 20px;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .message-bubble {
-  max-width: 70%;
+  max-width: 75%;
   padding: 10px 16px;
   border-radius: 16px;
-  line-height: 1.5;
-  white-space: pre-wrap;
+  line-height: 1.6;
   word-break: break-word;
+  font-size: 15px;
 }
 
 .user .message-bubble {
   background: #4a90d9;
   color: #fff;
   border-bottom-right-radius: 4px;
+  white-space: pre-wrap;
 }
 
 .assistant .message-bubble {
@@ -304,35 +361,103 @@ onMounted(() => {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
 }
 
+/* Markdown content styling */
+.markdown-body :deep(p) {
+  margin: 0 0 8px;
+}
+
+.markdown-body :deep(p:last-child) {
+  margin-bottom: 0;
+}
+
+.markdown-body :deep(ul),
+.markdown-body :deep(ol) {
+  margin: 4px 0;
+  padding-left: 20px;
+}
+
+.markdown-body :deep(code) {
+  background: #f0f0f0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.markdown-body :deep(pre) {
+  background: #f5f5f5;
+  padding: 12px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+
+.markdown-body :deep(pre code) {
+  background: none;
+  padding: 0;
+}
+
+.markdown-body :deep(strong) {
+  font-weight: 600;
+}
+
+.markdown-body :deep(a) {
+  color: #4a90d9;
+}
+
+.markdown-body :deep(table) {
+  border-collapse: collapse;
+  margin: 8px 0;
+  font-size: 14px;
+}
+
+.markdown-body :deep(th),
+.markdown-body :deep(td) {
+  border: 1px solid #ddd;
+  padding: 6px 12px;
+}
+
+.markdown-body :deep(th) {
+  background: #f5f5f5;
+}
+
 .stage-indicator {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
+  gap: 10px;
+  padding: 8px 16px 8px 52px;
   color: #888;
   font-size: 14px;
 }
 
-.stage-spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid #ddd;
-  border-top-color: #4a90d9;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+.stage-dots {
+  display: flex;
+  gap: 4px;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+.dot {
+  width: 6px;
+  height: 6px;
+  background: #bbb;
+  border-radius: 50%;
+  animation: bounce 1.4s infinite ease-in-out both;
+}
+
+.dot:nth-child(1) { animation-delay: -0.32s; }
+.dot:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes bounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
 }
 
 .chat-input-area {
   display: flex;
   align-items: flex-end;
-  gap: 8px;
-  padding: 12px 20px;
+  gap: 10px;
+  padding: 12px 20px 16px;
   background: #fff;
-  border-top: 1px solid #e5e5e5;
+  border-top: 1px solid #e8e8e8;
+  flex-shrink: 0;
 }
 
 .chat-input {
@@ -346,6 +471,7 @@ onMounted(() => {
   font-family: inherit;
   line-height: 1.4;
   max-height: 120px;
+  transition: border-color 0.2s;
 }
 
 .chat-input:focus {
@@ -360,7 +486,6 @@ onMounted(() => {
   color: #fff;
   border-radius: 50%;
   cursor: pointer;
-  font-size: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -375,5 +500,28 @@ onMounted(() => {
 
 .send-btn:not(:disabled):hover {
   background: #3a7bc8;
+}
+
+/* Mobile responsive */
+@media (max-width: 600px) {
+  .chat-layout {
+    max-width: 100%;
+  }
+
+  .chat-messages {
+    padding: 12px;
+  }
+
+  .message-bubble {
+    max-width: 85%;
+  }
+
+  .chat-input-area {
+    padding: 8px 12px 12px;
+  }
+
+  .header-title {
+    font-size: 16px;
+  }
 }
 </style>
