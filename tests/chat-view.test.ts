@@ -27,7 +27,7 @@ vi.mock('../src/services/session', () => ({
 }))
 
 import { chatStream, resetThread } from '../src/services/chat'
-import { clearTokens } from '../src/services/auth'
+import { clearTokens, isAuthenticated, startLogin } from '../src/services/auth'
 import { saveSession, clearSession, listSessions } from '../src/services/session'
 import ChatView from '../src/views/ChatView.vue'
 
@@ -53,6 +53,7 @@ describe('ChatView.vue', () => {
     vi.clearAllMocks()
     vi.mocked(listSessions).mockReturnValue([])
     vi.mocked(chatStream).mockResolvedValue('tid-default')
+    vi.mocked(isAuthenticated).mockReturnValue(true)
     // Simulate desktop viewport
     Object.defineProperty(window, 'innerWidth', { value: 1024, writable: true })
   })
@@ -277,6 +278,78 @@ describe('ChatView.vue', () => {
 
     await wrapper.find('.menu-btn').trigger('click')
     expect(sidebar.classes()).toContain('open')
+  })
+
+  it('formats time as HH:MM for today', async () => {
+    vi.mocked(listSessions).mockReturnValue([
+      {
+        id: 'sess-today',
+        threadId: null,
+        messages: [{ id: '1', role: 'user', content: 'hi', timestamp: Date.now() - 60000 }],
+        title: 'hi',
+        updatedAt: Date.now() - 60000,
+      },
+    ])
+    const { wrapper } = mountChat()
+    await flushPromises()
+    const timeText = wrapper.find('.session-time').text()
+    // Should be a time like "12:30" not a date
+    expect(timeText).toMatch(/\d{1,2}:\d{2}/)
+  })
+
+  it('formats time as weekday for this week', async () => {
+    const threeDaysAgo = Date.now() - 3 * 86400000
+    vi.mocked(listSessions).mockReturnValue([
+      {
+        id: 'sess-week',
+        threadId: null,
+        messages: [{ id: '1', role: 'user', content: 'hi', timestamp: threeDaysAgo }],
+        title: 'hi',
+        updatedAt: threeDaysAgo,
+      },
+    ])
+    const { wrapper } = mountChat()
+    await flushPromises()
+    const timeText = wrapper.find('.session-time').text()
+    // Should be a short weekday like "Mon", "Tue" etc.
+    expect(timeText).toMatch(/\w{2,3}/)
+  })
+
+  it('formats time as month+day for older', async () => {
+    const twoWeeksAgo = Date.now() - 14 * 86400000
+    vi.mocked(listSessions).mockReturnValue([
+      {
+        id: 'sess-old',
+        threadId: null,
+        messages: [{ id: '1', role: 'user', content: 'hi', timestamp: twoWeeksAgo }],
+        title: 'hi',
+        updatedAt: twoWeeksAgo,
+      },
+    ])
+    const { wrapper } = mountChat()
+    await flushPromises()
+    const timeText = wrapper.find('.session-time').text()
+    // Should contain a month abbreviation
+    expect(timeText.length).toBeGreaterThan(0)
+  })
+
+  it('shows login CTA when not authenticated', async () => {
+    vi.mocked(isAuthenticated).mockReturnValue(false)
+    const { wrapper } = mountChat()
+    await flushPromises()
+
+    expect(wrapper.find('.login-cta-btn').exists()).toBe(true)
+    expect(wrapper.find('.chat-login-bar').exists()).toBe(true)
+    expect(wrapper.find('.chat-input-area').exists()).toBe(false)
+  })
+
+  it('calls startLogin when login button clicked', async () => {
+    vi.mocked(isAuthenticated).mockReturnValue(false)
+    const { wrapper } = mountChat()
+    await flushPromises()
+
+    await wrapper.find('.login-cta-btn').trigger('click')
+    expect(startLogin).toHaveBeenCalled()
   })
 
   it('shows session list in sidebar', async () => {
