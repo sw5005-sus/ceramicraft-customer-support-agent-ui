@@ -7,21 +7,22 @@ A lightweight Vue 3 SPA that provides login (Zitadel PKCE) and a chat interface 
 ## Architecture
 
 ```
-Browser (SPA)
-  ├─ Login ──▶ Zitadel OIDC (PKCE) ──▶ user-ms oauth-callback
-  └─ Chat  ──▶ POST /chat/stream (SSE) ──▶ CS Agent
+Browser (SPA on csagent.ntdoc.site)
+  ├─ Sign In ──▶ Zitadel OIDC (PKCE) ──▶ user-ms oauth-callback
+  └─ Chat    ──▶ POST /chat/stream (SSE) ──▶ CS Agent (via nginx reverse proxy)
 ```
 
-- Pure static SPA — no backend dependency beyond CS Agent
-- Hot-pluggable: configure the agent URL and deploy independently
+- Single-page app — no separate login page; sign-in is integrated into the chat view
+- Nginx reverse proxy: `/chat`, `/reset`, `/cs-agent/*` → cs-agent; `/user-ms/*` → user-ms
 - SSE streaming: real-time stage updates (guarding → classifying → processing → reply)
 
 ## Tech Stack
 
 - Vue 3 + TypeScript + Vite
-- vue-router (SPA routing with auth guards)
+- vue-router (SPA routing)
 - Native `fetch` + `ReadableStream` for SSE
-- nginx-unprivileged for production serving
+- marked + DOMPurify for markdown rendering
+- nginx-unprivileged for production serving + reverse proxy
 
 ## Development
 
@@ -37,7 +38,7 @@ npm run dev                    # http://localhost:5173
 |----------|---------|-------------|
 | `VITE_AGENT_BASE_URL` | `http://localhost:8080` | CS Agent backend URL |
 | `VITE_ZITADEL_HOST` | `https://cerami-t6ihrd.us1.zitadel.cloud` | Zitadel OIDC issuer |
-| `VITE_ZITADEL_CLIENT_ID` | `361761429302373082` | Zitadel app client ID |
+| `VITE_ZITADEL_CLIENT_ID` | `369270211708226724` | Zitadel app client ID |
 | `VITE_ZITADEL_REDIRECT_URI` | `{origin}/callback` | OAuth redirect URI |
 | `VITE_USER_MS_BASE_URL` | `http://localhost:8083` | User microservice URL |
 
@@ -48,7 +49,7 @@ npm test                   # Run all tests
 npm run test:coverage      # Run tests with coverage report
 ```
 
-9 test files, 64 tests covering auth (PKCE flow, token storage, refresh), chat (SSE parsing, callbacks), session persistence, routing, and all Vue components. 95% statement / 97% line coverage.
+9 test files, 77 tests covering auth (PKCE flow, token storage, refresh), chat (SSE parsing, callbacks), session persistence (multi-conversation), routing, and all Vue components.
 
 ## Build & Deploy
 
@@ -74,17 +75,16 @@ Runtime env vars override build-time values via `docker-entrypoint.sh` placehold
 src/
 ├── main.ts                 # App entry
 ├── App.vue                 # Root component
-├── router/index.ts         # Routes + auth guard
+├── router/index.ts         # Routes (single-page, no auth guard)
 ├── services/
 │   ├── config.ts           # Runtime configuration (build + runtime env)
 │   ├── auth.ts             # Zitadel PKCE auth
 │   ├── chat.ts             # CS Agent API client (SSE)
-│   └── session.ts          # Chat session persistence (localStorage)
+│   └── session.ts          # Multi-conversation persistence (localStorage)
 ├── types/index.ts          # TypeScript types
 └── views/
-    ├── LoginView.vue       # Login page
     ├── CallbackView.vue    # OAuth callback handler
-    └── ChatView.vue        # Chat interface
+    └── ChatView.vue        # Chat interface + sidebar + login integration
 ```
 
 ## CI/CD
@@ -103,16 +103,11 @@ src/
 
 The Deploy workflow builds a Docker image tagged with `dev-YYYYMMDDHHmm` and updates the ArgoCD deploy repo (`ceramicraft-argocd-deploy`).
 
-When deploying alongside cs-agent, ensure `CS_AGENT_CORS_ORIGINS` is set on the agent to allow the UI's origin:
-
-```yaml
-# In cs-agent values.yaml extraEnv:
-- name: CS_AGENT_CORS_ORIGINS
-  value: "https://chat.ceramicraft.com"
-```
+When deploying alongside cs-agent, no CORS configuration is needed — nginx reverse proxy keeps all API calls same-origin.
 
 ### Prerequisites
 
-- Zitadel: configure a SPA-type application with correct redirect URI and allowed CORS origin
-- IngressRoute or Ingress for external access
+- Zitadel: configure a SPA-type application with correct redirect URI
+- IngressRoute or Ingress for external access (Traefik recommended)
 - ArgoCD application pointing to the helm chart directory
+- No CORS configuration needed on cs-agent (nginx reverse proxy handles same-origin)
