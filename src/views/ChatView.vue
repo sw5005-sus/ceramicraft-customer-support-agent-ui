@@ -336,10 +336,7 @@ onUnmounted(() => {
           <div class="empty-icon">🏺</div>
           <h2>Welcome to CeramiCraft Support</h2>
           <p v-if="loggedIn">Ask about products, orders, or anything we can help with.</p>
-          <p v-else>Sign in to chat with our support assistant.</p>
-          <button v-if="!loggedIn" class="login-cta-btn" @click="startLogin">
-            Sign in to start chatting
-          </button>
+          <p v-else>Sign in from the sidebar to chat with our support assistant.</p>
         </div>
 
         <div
@@ -394,11 +391,6 @@ onUnmounted(() => {
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
           </svg>
-        </button>
-      </div>
-      <div v-else class="chat-login-bar">
-        <button class="login-bar-btn" @click="startLogin">
-          Sign in to start chatting
         </button>
       </div>
     </div>
@@ -560,8 +552,8 @@ onUnmounted(() => {
   width: 100%;
   padding: 8px;
   border: none;
-  background: #4a90d9;
-  color: #fff;
+  background: #313244;
+  color: #cdd6f4;
   border-radius: 6px;
   cursor: pointer;
   font-size: 14px;
@@ -569,48 +561,7 @@ onUnmounted(() => {
 }
 
 .login-sidebar-btn:hover {
-  background: #3a7bc8;
-}
-
-.login-cta-btn {
-  margin-top: 20px;
-  padding: 12px 28px;
-  font-size: 16px;
-  background: #4a90d9;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.login-cta-btn:hover {
-  background: #3a7bc8;
-}
-
-.chat-login-bar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px 20px;
-  background: #fff;
-  border-top: 1px solid #e8e8e8;
-  flex-shrink: 0;
-}
-
-.login-bar-btn {
-  padding: 10px 24px;
-  font-size: 15px;
-  background: #4a90d9;
-  color: #fff;
-  border: none;
-  border-radius: 20px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.login-bar-btn:hover {
-  background: #3a7bc8;
+  background: #45475a;
 }
 
 /* ─── Mobile overlay ─── */

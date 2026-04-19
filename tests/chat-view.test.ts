@@ -224,9 +224,9 @@ describe('ChatView.vue', () => {
     await flushPromises()
 
     expect(clearTokens).toHaveBeenCalled()
-    // After logout, login bar should appear instead of input
-    expect(wrapper.find('.chat-login-bar').exists()).toBe(true)
+    // After logout, input area should be hidden, sidebar shows sign in
     expect(wrapper.find('.chat-input-area').exists()).toBe(false)
+    expect(wrapper.find('.login-sidebar-btn').exists()).toBe(true)
   })
 
   it('shows error from onError callback', async () => {
@@ -333,22 +333,22 @@ describe('ChatView.vue', () => {
     expect(timeText.length).toBeGreaterThan(0)
   })
 
-  it('shows login CTA when not authenticated', async () => {
+  it('hides input area when not authenticated', async () => {
     vi.mocked(isAuthenticated).mockReturnValue(false)
     const { wrapper } = mountChat()
     await flushPromises()
 
-    expect(wrapper.find('.login-cta-btn').exists()).toBe(true)
-    expect(wrapper.find('.chat-login-bar').exists()).toBe(true)
     expect(wrapper.find('.chat-input-area').exists()).toBe(false)
+    expect(wrapper.text()).toContain('Sign in from the sidebar')
   })
 
-  it('calls startLogin when login button clicked', async () => {
+  it('shows sign in button in sidebar when not authenticated', async () => {
     vi.mocked(isAuthenticated).mockReturnValue(false)
     const { wrapper } = mountChat()
     await flushPromises()
 
-    await wrapper.find('.login-cta-btn').trigger('click')
+    expect(wrapper.find('.login-sidebar-btn').exists()).toBe(true)
+    await wrapper.find('.login-sidebar-btn').trigger('click')
     expect(startLogin).toHaveBeenCalled()
   })
 
