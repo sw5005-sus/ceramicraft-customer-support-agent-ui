@@ -31,7 +31,7 @@ export const config = {
     clientId: resolve(
       '__VITE_ZITADEL_CLIENT_ID__',
       import.meta.env.VITE_ZITADEL_CLIENT_ID,
-      '361761429302373082',
+      '369270211708226724',
     ),
     redirectUri: resolve(
       '__VITE_ZITADEL_REDIRECT_URI__',

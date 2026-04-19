@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, nextTick, onMounted, watch, computed } from 'vue'
+import { ref, nextTick, onMounted, onUnmounted, watch, computed } from 'vue'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { chatStream } from '../services/chat'
@@ -248,6 +248,10 @@ onMounted(() => {
 })
 
 const isActiveSession = computed(() => (id: string) => id === currentSessionId.value)
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+})
 </script>
 
 <template>
