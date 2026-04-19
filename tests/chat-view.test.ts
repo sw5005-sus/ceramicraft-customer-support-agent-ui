@@ -14,13 +14,19 @@ vi.mock('../src/services/auth', () => ({
 
 vi.mock('../src/services/session', () => ({
   saveSession: vi.fn(),
-  loadSession: vi.fn().mockReturnValue(null),
+  listSessions: vi.fn().mockReturnValue([]),
+  getSession: vi.fn().mockReturnValue(null),
+  deleteSession: vi.fn(),
   clearSession: vi.fn(),
+  clearActiveSession: vi.fn(),
+  getActiveSessionId: vi.fn().mockReturnValue(null),
+  setActiveSessionId: vi.fn(),
+  migrateOldSession: vi.fn(),
 }))
 
 import { chatStream, resetThread } from '../src/services/chat'
 import { clearTokens } from '../src/services/auth'
-import { loadSession, saveSession, clearSession } from '../src/services/session'
+import { saveSession, clearSession, listSessions } from '../src/services/session'
 import ChatView from '../src/views/ChatView.vue'
 
 function makeRouter() {
@@ -43,8 +49,10 @@ function mountChat() {
 describe('ChatView.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(loadSession).mockReturnValue(null)
+    vi.mocked(listSessions).mockReturnValue([])
     vi.mocked(chatStream).mockResolvedValue('tid-default')
+    // Simulate desktop viewport
+    Object.defineProperty(window, 'innerWidth', { value: 1024, writable: true })
   })
 
   it('renders empty state when no messages', () => {
@@ -53,10 +61,14 @@ describe('ChatView.vue', () => {
     expect(wrapper.text()).toContain('Welcome to CeramiCraft')
   })
 
-  it('renders header with title and buttons', () => {
+  it('renders header with title', () => {
     const { wrapper } = mountChat()
     expect(wrapper.find('.header-title').text()).toBe('CeramiCraft Support')
-    expect(wrapper.findAll('.action-btn')).toHaveLength(2)
+  })
+
+  it('renders sidebar', () => {
+    const { wrapper } = mountChat()
+    expect(wrapper.find('.sidebar').exists()).toBe(true)
   })
 
   it('has a textarea and send button', () => {
@@ -103,7 +115,6 @@ describe('ChatView.vue', () => {
     await textarea.trigger('keydown.enter', { shiftKey: true })
     await flushPromises()
 
-    // Only the default mock setup, no actual call from this test
     expect(chatStream).not.toHaveBeenCalled()
   })
 
@@ -184,7 +195,7 @@ describe('ChatView.vue', () => {
     expect(chatStream).toHaveBeenCalledTimes(2)
   })
 
-  it('new conversation clears messages and calls resetThread', async () => {
+  it('new conversation clears messages', async () => {
     vi.mocked(chatStream).mockImplementation(async (_msg, _tid, callbacks) => {
       callbacks.onDone?.('tid-clear')
       return 'tid-clear'
@@ -196,41 +207,21 @@ describe('ChatView.vue', () => {
     await wrapper.find('.send-btn').trigger('click')
     await flushPromises()
 
-    // Click new conversation button (first action-btn)
-    const newBtn = wrapper.findAll('.action-btn')[0]
-    await newBtn.trigger('click')
+    // Click new conversation button in sidebar
+    await wrapper.find('.sidebar-new-btn').trigger('click')
     await flushPromises()
 
-    expect(resetThread).toHaveBeenCalledWith('tid-clear')
-    expect(clearSession).toHaveBeenCalled()
     expect(wrapper.find('.empty-state').exists()).toBe(true)
   })
 
   it('logout clears tokens and redirects to /login', async () => {
     const { wrapper, router } = mountChat()
 
-    const logoutBtn = wrapper.findAll('.action-btn')[1]
-    await logoutBtn.trigger('click')
+    await wrapper.find('.logout-sidebar-btn').trigger('click')
     await flushPromises()
 
     expect(clearTokens).toHaveBeenCalled()
     expect(router.currentRoute.value.path).toBe('/login')
-  })
-
-  it('restores session from localStorage on mount', async () => {
-    vi.mocked(loadSession).mockReturnValue({
-      threadId: 'saved-tid',
-      messages: [
-        { id: '1', role: 'user', content: 'saved msg', timestamp: 1000 },
-        { id: '2', role: 'assistant', content: 'saved reply', timestamp: 1001 },
-      ],
-    })
-    const { wrapper } = mountChat()
-    await flushPromises()
-
-    expect(wrapper.findAll('.message')).toHaveLength(2)
-    expect(wrapper.text()).toContain('saved msg')
-    expect(wrapper.text()).toContain('saved reply')
   })
 
   it('shows error from onError callback', async () => {
@@ -269,7 +260,18 @@ describe('ChatView.vue', () => {
     await wrapper.find('.send-btn').trigger('click')
     await flushPromises()
 
-    // chatStream should not have been called for whitespace-only input
     expect(vi.mocked(chatStream).mock.calls.length).toBe(0)
+  })
+
+  it('toggles sidebar with menu button', async () => {
+    const { wrapper } = mountChat()
+    const sidebar = wrapper.find('.sidebar')
+    expect(sidebar.classes()).toContain('open')
+
+    await wrapper.find('.menu-btn').trigger('click')
+    expect(sidebar.classes()).not.toContain('open')
+
+    await wrapper.find('.menu-btn').trigger('click')
+    expect(sidebar.classes()).toContain('open')
   })
 })
