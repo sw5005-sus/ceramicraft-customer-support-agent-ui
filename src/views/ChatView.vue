@@ -319,7 +319,6 @@ const isActiveSession = computed(() => (id: string) => id === currentSessionId.v
               <path d="M3 12h18M3 6h18M3 18h18" />
             </svg>
           </button>
-          <span class="header-logo">🏺</span>
           <span class="header-title">CeramiCraft Support</span>
         </div>
       </header>
