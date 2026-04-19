@@ -47,12 +47,17 @@ npm run dev                    # http://localhost:5173
 npm run build     # Output: dist/
 ```
 
-Deploy `dist/` to S3 + CloudFront, or use the Dockerfile:
+## Docker Deployment
 
 ```bash
 docker build -t ceramicraft-customer-support-agent-ui .
-docker run -p 8080:8080 ceramicraft-customer-support-agent-ui
+docker run -p 8080:8080 \
+  -e VITE_AGENT_BASE_URL=https://api.ceramicraft.com \
+  -e VITE_ZITADEL_REDIRECT_URI=https://chat.ceramicraft.com/callback \
+  ceramicraft-customer-support-agent-ui
 ```
+
+Runtime env vars override build-time values via `docker-entrypoint.sh` placeholder replacement.
 
 ## Project Structure
 
@@ -62,12 +67,23 @@ src/
 ├── App.vue                 # Root component
 ├── router/index.ts         # Routes + auth guard
 ├── services/
-│   ├── config.ts           # Runtime configuration
+│   ├── config.ts           # Runtime configuration (build + runtime env)
 │   ├── auth.ts             # Zitadel PKCE auth
-│   └── chat.ts             # CS Agent API client (SSE)
+│   ├── chat.ts             # CS Agent API client (SSE)
+│   └── session.ts          # Chat session persistence (localStorage)
 ├── types/index.ts          # TypeScript types
 └── views/
     ├── LoginView.vue       # Login page
     ├── CallbackView.vue    # OAuth callback handler
     └── ChatView.vue        # Chat interface
 ```
+
+## CI/CD
+
+| Workflow | Trigger | Description |
+|----------|---------|-------------|
+| Lint | push/PR | Type check (vue-tsc) + build |
+| Snyk | push to main, PR | npm dependency vulnerability scan |
+| Trivy | push to main, PR | Docker image vulnerability scan |
+| Release | version tag | Auto-create GitHub release |
+| Deploy | manual | Build + push DockerHub + update ArgoCD |
