@@ -20,7 +20,7 @@ onMounted(async () => {
 
   try {
     await handleCallback(code, state)
-    router.replace('/chat')
+    router.replace('/')
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Authentication failed'
     loading.value = false
@@ -37,7 +37,7 @@ onMounted(async () => {
       </template>
       <template v-else>
         <p class="error">{{ error }}</p>
-        <button @click="router.replace('/login')">Back to login</button>
+        <button @click="router.replace('/')">Back to login</button>
       </template>
     </div>
   </div>

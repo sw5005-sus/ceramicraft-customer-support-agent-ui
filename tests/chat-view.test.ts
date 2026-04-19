@@ -10,6 +10,8 @@ vi.mock('../src/services/chat', () => ({
 
 vi.mock('../src/services/auth', () => ({
   clearTokens: vi.fn(),
+  isAuthenticated: vi.fn().mockReturnValue(true),
+  startLogin: vi.fn(),
 }))
 
 vi.mock('../src/services/session', () => ({
@@ -214,14 +216,16 @@ describe('ChatView.vue', () => {
     expect(wrapper.find('.empty-state').exists()).toBe(true)
   })
 
-  it('logout clears tokens and redirects to /login', async () => {
-    const { wrapper, router } = mountChat()
+  it('logout clears tokens and hides input', async () => {
+    const { wrapper } = mountChat()
 
     await wrapper.find('.logout-sidebar-btn').trigger('click')
     await flushPromises()
 
     expect(clearTokens).toHaveBeenCalled()
-    expect(router.currentRoute.value.path).toBe('/login')
+    // After logout, login bar should appear instead of input
+    expect(wrapper.find('.chat-login-bar').exists()).toBe(true)
+    expect(wrapper.find('.chat-input-area').exists()).toBe(false)
   })
 
   it('shows error from onError callback', async () => {

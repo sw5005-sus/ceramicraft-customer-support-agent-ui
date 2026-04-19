@@ -15,6 +15,7 @@ function makeRouter() {
     history: createMemoryHistory(),
     routes: [
       { path: '/callback', component: CallbackView },
+      { path: '/', component: { template: '<div>home</div>' } },
       { path: '/chat', component: { template: '<div>chat</div>' } },
       { path: '/login', component: { template: '<div>login</div>' } },
     ],
@@ -78,7 +79,7 @@ describe('CallbackView.vue', () => {
     mount(CallbackView, { global: { plugins: [router] } })
     await flushPromises()
 
-    expect(router.currentRoute.value.path).toBe('/chat')
+    expect(router.currentRoute.value.path).toBe('/')
   })
 
   it('shows back to login button on error', async () => {

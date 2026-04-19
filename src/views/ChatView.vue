@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { ref, nextTick, onMounted, watch, computed } from 'vue'
-import { useRouter } from 'vue-router'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { chatStream } from '../services/chat'
-import { clearTokens } from '../services/auth'
+import { clearTokens, isAuthenticated, startLogin } from '../services/auth'
 import {
   listSessions,
   saveSession,
@@ -17,7 +16,8 @@ import {
 import type { ChatMessage, AgentStage } from '../types'
 import type { ConversationSession } from '../services/session'
 
-const router = useRouter()
+// Auth state
+const loggedIn = ref(isAuthenticated())
 
 // Chat state
 const messages = ref<ChatMessage[]>([])
@@ -196,7 +196,7 @@ function retryLastMessage() {
 
 function logout() {
   clearTokens()
-  router.replace('/login')
+  loggedIn.value = false
 }
 
 function handleKeydown(e: KeyboardEvent) {
@@ -303,8 +303,11 @@ const isActiveSession = computed(() => (id: string) => id === currentSessionId.v
       -->
 
       <div class="sidebar-footer">
-        <button class="logout-sidebar-btn" @click="logout">
+        <button v-if="loggedIn" class="logout-sidebar-btn" @click="logout">
           ↗ Sign Out
+        </button>
+        <button v-else class="login-sidebar-btn" @click="startLogin">
+          Sign In
         </button>
       </div>
     </aside>
@@ -328,7 +331,11 @@ const isActiveSession = computed(() => (id: string) => id === currentSessionId.v
         <div v-if="messages.length === 0" class="empty-state">
           <div class="empty-icon">🏺</div>
           <h2>Welcome to CeramiCraft Support</h2>
-          <p>Ask about products, orders, or anything we can help with.</p>
+          <p v-if="loggedIn">Ask about products, orders, or anything we can help with.</p>
+          <p v-else>Sign in to chat with our support assistant.</p>
+          <button v-if="!loggedIn" class="login-cta-btn" @click="startLogin">
+            Sign in to start chatting
+          </button>
         </div>
 
         <div
@@ -365,7 +372,7 @@ const isActiveSession = computed(() => (id: string) => id === currentSessionId.v
       </div>
 
       <!-- Input -->
-      <div class="chat-input-area">
+      <div v-if="loggedIn" class="chat-input-area">
         <textarea
           ref="textareaRef"
           v-model="input"
@@ -383,6 +390,11 @@ const isActiveSession = computed(() => (id: string) => id === currentSessionId.v
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
           </svg>
+        </button>
+      </div>
+      <div v-else class="chat-login-bar">
+        <button class="login-bar-btn" @click="startLogin">
+          Sign in to start chatting
         </button>
       </div>
     </div>
@@ -538,6 +550,63 @@ const isActiveSession = computed(() => (id: string) => id === currentSessionId.v
 
 .logout-sidebar-btn:hover {
   background: #45475a;
+}
+
+.login-sidebar-btn {
+  width: 100%;
+  padding: 8px;
+  border: none;
+  background: #4a90d9;
+  color: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.login-sidebar-btn:hover {
+  background: #3a7bc8;
+}
+
+.login-cta-btn {
+  margin-top: 20px;
+  padding: 12px 28px;
+  font-size: 16px;
+  background: #4a90d9;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.login-cta-btn:hover {
+  background: #3a7bc8;
+}
+
+.chat-login-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 20px;
+  background: #fff;
+  border-top: 1px solid #e8e8e8;
+  flex-shrink: 0;
+}
+
+.login-bar-btn {
+  padding: 10px 24px;
+  font-size: 15px;
+  background: #4a90d9;
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.login-bar-btn:hover {
+  background: #3a7bc8;
 }
 
 /* ─── Mobile overlay ─── */

@@ -1,17 +1,16 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { isAuthenticated } from '../services/auth'
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
     {
       path: '/',
-      redirect: '/chat',
+      name: 'Chat',
+      component: () => import('../views/ChatView.vue'),
     },
     {
       path: '/login',
-      name: 'Login',
-      component: () => import('../views/LoginView.vue'),
+      redirect: '/',
     },
     {
       path: '/callback',
@@ -20,17 +19,9 @@ const router = createRouter({
     },
     {
       path: '/chat',
-      name: 'Chat',
-      component: () => import('../views/ChatView.vue'),
-      meta: { requiresAuth: true },
+      redirect: '/',
     },
   ],
-})
-
-router.beforeEach((to) => {
-  if (to.meta.requiresAuth && !isAuthenticated()) {
-    return { name: 'Login' }
-  }
 })
 
 export default router
