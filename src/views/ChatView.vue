@@ -699,8 +699,8 @@ onUnmounted(() => {
 }
 
 .user .message-bubble {
-  background: #4a90d9;
-  color: #fff;
+  background: #f0f0f5;
+  color: #1a1a1a;
   border-bottom-right-radius: 4px;
   white-space: pre-wrap;
 }
