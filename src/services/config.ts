@@ -1,16 +1,49 @@
-/** Runtime configuration — loaded from environment variables at build time. */
-export const config = {
-  /** CS Agent backend base URL. */
-  agentBaseUrl: import.meta.env.VITE_AGENT_BASE_URL as string || 'http://localhost:8080',
+/**
+ * Runtime configuration.
+ *
+ * Values come from Vite env vars at build time. For Docker deployments,
+ * the docker-entrypoint.sh script replaces __PLACEHOLDER__ tokens with
+ * runtime env vars before nginx starts.
+ *
+ * Precedence: runtime placeholder > Vite env var > default.
+ */
 
-  /** Zitadel OIDC configuration. */
+function resolve(placeholder: string, viteEnv: string | undefined, fallback: string): string {
+  // If placeholder was replaced at runtime, use it
+  if (placeholder && !placeholder.startsWith('__VITE_')) return placeholder
+  // Otherwise use Vite build-time env or fallback
+  return viteEnv || fallback
+}
+
+export const config = {
+  agentBaseUrl: resolve(
+    '__VITE_AGENT_BASE_URL__',
+    import.meta.env.VITE_AGENT_BASE_URL,
+    'http://localhost:8080',
+  ),
+
   zitadel: {
-    host: import.meta.env.VITE_ZITADEL_HOST as string || 'https://cerami-t6ihrd.us1.zitadel.cloud',
-    clientId: import.meta.env.VITE_ZITADEL_CLIENT_ID as string || '361761429302373082',
-    redirectUri: import.meta.env.VITE_ZITADEL_REDIRECT_URI as string || `${window.location.origin}/callback`,
+    host: resolve(
+      '__VITE_ZITADEL_HOST__',
+      import.meta.env.VITE_ZITADEL_HOST,
+      'https://cerami-t6ihrd.us1.zitadel.cloud',
+    ),
+    clientId: resolve(
+      '__VITE_ZITADEL_CLIENT_ID__',
+      import.meta.env.VITE_ZITADEL_CLIENT_ID,
+      '361761429302373082',
+    ),
+    redirectUri: resolve(
+      '__VITE_ZITADEL_REDIRECT_URI__',
+      import.meta.env.VITE_ZITADEL_REDIRECT_URI,
+      `${window.location.origin}/callback`,
+    ),
     scopes: 'openid profile email offline_access urn:zitadel:iam:user:metadata custom:local_userid',
   },
 
-  /** User-ms base URL for oauth-callback registration. */
-  userMsBaseUrl: import.meta.env.VITE_USER_MS_BASE_URL as string || 'http://localhost:8083',
+  userMsBaseUrl: resolve(
+    '__VITE_USER_MS_BASE_URL__',
+    import.meta.env.VITE_USER_MS_BASE_URL,
+    'http://localhost:8083',
+  ),
 } as const

@@ -10,7 +10,11 @@ RUN npm run build
 FROM nginxinc/nginx-unprivileged:1.28-alpine3.21
 USER root
 RUN apk upgrade --no-cache
-USER nginx
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh && chown -R nginx:nginx /usr/share/nginx/html
+USER nginx
+ENTRYPOINT ["/docker-entrypoint.sh"]
+CMD ["nginx", "-g", "daemon off;"]
 EXPOSE 8080

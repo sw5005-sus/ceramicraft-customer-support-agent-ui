@@ -15,6 +15,7 @@ const input = ref('')
 const threadId = ref<string | null>(null)
 const stage = ref<AgentStage>('idle')
 const sending = ref(false)
+const lastFailedMessage = ref<string | null>(null)
 const chatContainer = ref<HTMLElement | null>(null)
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 
@@ -60,6 +61,7 @@ async function sendMessage() {
   input.value = ''
   sending.value = true
   stage.value = 'guarding'
+  lastFailedMessage.value = null
   scrollToBottom()
 
   // Reset textarea height
@@ -100,6 +102,7 @@ async function sendMessage() {
       threadId.value = returnedThreadId
     }
   } catch (e) {
+    lastFailedMessage.value = text
     const errorMsg: ChatMessage = {
       id: crypto.randomUUID(),
       role: 'assistant',
@@ -116,6 +119,7 @@ async function sendMessage() {
 }
 
 async function newConversation() {
+  lastFailedMessage.value = null
   if (threadId.value) {
     try {
       await resetThread(threadId.value)
@@ -127,6 +131,23 @@ async function newConversation() {
   threadId.value = null
   stage.value = 'idle'
   clearSession()
+}
+
+function retryLastMessage() {
+  if (!lastFailedMessage.value) return
+  // Remove the last error message
+  const last = messages.value[messages.value.length - 1]
+  if (last?.role === 'assistant' && last.content.startsWith('⚠️')) {
+    messages.value.pop()
+  }
+  // Also remove the failed user message
+  const userMsg = messages.value[messages.value.length - 1]
+  if (userMsg?.role === 'user') {
+    messages.value.pop()
+  }
+  input.value = lastFailedMessage.value
+  lastFailedMessage.value = null
+  nextTick(sendMessage)
 }
 
 function logout() {
@@ -203,6 +224,13 @@ onMounted(() => {
           <span class="dot" />
         </div>
         <span>{{ stageLabels[stage] }}</span>
+      </div>
+
+      <!-- Retry button -->
+      <div v-if="lastFailedMessage && !sending" class="retry-bar">
+        <button class="retry-btn" @click="retryLastMessage">
+          ↻ Retry
+        </button>
       </div>
     </div>
 
@@ -457,6 +485,27 @@ onMounted(() => {
 @keyframes bounce {
   0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
   40% { transform: scale(1); opacity: 1; }
+}
+
+.retry-bar {
+  display: flex;
+  justify-content: center;
+  padding: 8px 16px 0 52px;
+}
+
+.retry-btn {
+  padding: 6px 16px;
+  font-size: 14px;
+  color: #4a90d9;
+  background: #f0f7ff;
+  border: 1px solid #c5ddf5;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.retry-btn:hover {
+  background: #dfeeff;
 }
 
 .chat-input-area {
