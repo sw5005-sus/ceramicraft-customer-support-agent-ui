@@ -3,7 +3,7 @@ import { ref, nextTick, onMounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
-import { chatStream, resetThread } from '../services/chat'
+import { chatStream } from '../services/chat'
 import { clearTokens } from '../services/auth'
 import {
   listSessions,
