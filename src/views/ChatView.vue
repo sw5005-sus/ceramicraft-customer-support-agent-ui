@@ -311,7 +311,7 @@ onUnmounted(() => {
           ↗ Sign Out
         </button>
         <button v-else class="login-sidebar-btn" @click="startLogin">
-          Sign In
+          ↙ Sign In
         </button>
       </div>
     </aside>
@@ -541,6 +541,7 @@ onUnmounted(() => {
   border-radius: 6px;
   cursor: pointer;
   font-size: 14px;
+  line-height: 20px;
   transition: background 0.2s;
 }
 
@@ -557,6 +558,7 @@ onUnmounted(() => {
   border-radius: 6px;
   cursor: pointer;
   font-size: 14px;
+  line-height: 20px;
   transition: background 0.2s;
 }
 
