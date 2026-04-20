@@ -798,7 +798,13 @@ onUnmounted(() => {
   font-family: inherit;
   line-height: 1.4;
   max-height: 120px;
+  overflow-y: auto;
+  scrollbar-width: none;
   transition: border-color 0.2s;
+}
+
+.chat-input::-webkit-scrollbar {
+  display: none;
 }
 
 .chat-input:focus { border-color: #4a90d9; }
