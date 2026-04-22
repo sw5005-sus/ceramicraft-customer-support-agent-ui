@@ -703,7 +703,6 @@ onUnmounted(() => {
 .user .message-bubble {
   background: #e3edfa;
   color: #1a1a1a;
-  border-top-right-radius: 4px;
   white-space: pre-wrap;
   box-shadow: 0 1px 5px rgba(0, 0, 0, 0.09);
 }
@@ -711,7 +710,6 @@ onUnmounted(() => {
 .assistant .message-bubble {
   background: #fff;
   color: #1a1a1a;
-  border-top-left-radius: 4px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
 }
 
