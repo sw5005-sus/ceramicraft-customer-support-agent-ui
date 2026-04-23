@@ -7,7 +7,7 @@ A lightweight Vue 3 SPA that provides login (Zitadel PKCE) and a chat interface 
 ## Architecture
 
 ```
-Browser (SPA on csagent.ntdoc.site)
+Browser
   ├─ Sign In ──▶ Zitadel OIDC (PKCE) ──▶ user-ms oauth-callback
   └─ Chat    ──▶ POST /chat/stream (SSE) ──▶ CS Agent (via nginx reverse proxy)
 ```
@@ -48,6 +48,7 @@ npm run dev                    # http://localhost:5173
 npm test                   # Run all tests
 npm run test:coverage      # Run tests with coverage report
 ```
+
 ## Build & Deploy
 
 ```bash
