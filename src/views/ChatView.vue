@@ -458,6 +458,31 @@ onUnmounted(() => {
   flex: 1;
   overflow-y: auto;
   padding: 8px;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #45475a transparent;
+}
+
+.sidebar-sessions::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar-sessions::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-sessions::-webkit-scrollbar-thumb {
+  background: #45475a;
+  border: 2px solid #1e1e2e;
+  border-radius: 999px;
+}
+
+.sidebar-sessions::-webkit-scrollbar-thumb:hover {
+  background: #585b70;
+}
+
+.sidebar-sessions::-webkit-scrollbar-button {
+  display: none;
 }
 
 .session-item {
@@ -635,6 +660,31 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #d0d7de transparent;
+}
+
+.chat-messages::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+  background: #d0d7de;
+  border: 2px solid #f6f7fb;
+  border-radius: 999px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+  background: #aeb8c2;
+}
+
+.chat-messages::-webkit-scrollbar-button {
+  display: none;
 }
 
 .empty-state {
